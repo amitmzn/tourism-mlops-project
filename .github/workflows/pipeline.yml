@@ -1,0 +1,70 @@
+name: Tourism MLOps Pipeline
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  register-dataset:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+      - name: Install Dependencies
+        run: pip install huggingface_hub
+      - name: Upload Dataset
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: python model_building/upload_data.py
+
+  data-prep:
+    needs: register-dataset
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+      - name: Install Dependencies
+        run: pip install pandas numpy scikit-learn huggingface_hub datasets
+      - name: Run Data Preparation
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: python model_building/data_prep.py
+
+  model-training:
+    needs: data-prep
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+      - name: Install Dependencies
+        run: pip install pandas numpy scikit-learn xgboost mlflow huggingface_hub datasets joblib
+      - name: Model Training
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: python model_building/model_training.py
+
+  deploy-hosting:
+    needs: model-training
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+      - name: Install Dependencies
+        run: pip install huggingface_hub
+      - name: Deploy to HF Space
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: python model_building/deploy.py
