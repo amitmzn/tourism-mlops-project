@@ -35,7 +35,7 @@ jobs:
       - name: Run Data Preparation
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
-        run: python model_building/prep.py
+        run: python model_building/data_prep.py
 
   model-training:
     needs: data-prep
@@ -47,7 +47,7 @@ jobs:
         with:
           python-version: '3.9'
       - name: Install Dependencies
-        run: pip install pandas numpy scikit-learn xgboost mlflow huggingface_hub datasets joblib
+        run: pip install pandas numpy scikit-learn xgboost huggingface_hub datasets joblib
       - name: Model Training
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}

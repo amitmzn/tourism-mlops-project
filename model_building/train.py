@@ -7,10 +7,6 @@ import joblib
 import os
 from huggingface_hub import HfApi, create_repo
 from huggingface_hub.utils import RepositoryNotFoundError
-import mlflow
-
-mlflow.set_tracking_uri("http://localhost:5000")
-mlflow.set_experiment("tourism-mlops-experiment")
 
 api = HfApi(token=os.getenv("HF_TOKEN"))
 
@@ -26,49 +22,29 @@ param_grid = {
     'subsample': [0.8, 1.0]
 }
 
-with mlflow.start_run():
-    xgb = XGBClassifier(random_state=42, use_label_encoder=False, eval_metric='logloss')
-    grid_search = GridSearchCV(xgb, param_grid, cv=3, scoring='f1', n_jobs=-1)
-    grid_search.fit(X_train, y_train.values.ravel())
-    
-    results = grid_search.cv_results_
-    for i in range(len(results['params'])):
-        with mlflow.start_run(nested=True):
-            mlflow.log_params(results['params'][i])
-            mlflow.log_metric("mean_f1", results['mean_test_score'][i])
-    
-    best_model = grid_search.best_estimator_
-    mlflow.log_params(grid_search.best_params_)
-    
-    y_pred = best_model.predict(X_test)
-    y_prob = best_model.predict_proba(X_test)[:, 1]
-    
-    mlflow.log_metrics({
-        "accuracy": accuracy_score(y_test, y_pred),
-        "precision": precision_score(y_test, y_pred),
-        "recall": recall_score(y_test, y_pred),
-        "f1_score": f1_score(y_test, y_pred),
-        "roc_auc": roc_auc_score(y_test, y_prob)
-    })
-    
-    model_path = "best_tourism_model.joblib"
-    joblib.dump(best_model, model_path)
-    mlflow.log_artifact(model_path, artifact_path="model")
-    
-    repo_id = "amitmzn/tourism-model"
-    repo_type = "model"
-    
-    try:
-        api.repo_info(repo_id=repo_id, repo_type=repo_type)
-        print(f"Model repo '{repo_id}' exists.")
-    except RepositoryNotFoundError:
-        create_repo(repo_id=repo_id, repo_type=repo_type, private=False)
-        print(f"Model repo '{repo_id}' created.")
-    
-    api.upload_file(
-        path_or_fileobj=model_path,
-        path_in_repo="best_tourism_model.joblib",
-        repo_id=repo_id,
-        repo_type=repo_type
-    )
-    print("Model uploaded to HF!")
+# FIXED: Removed deprecated use_label_encoder parameter
+xgb = XGBClassifier(random_state=42, eval_metric='logloss')
+grid_search = GridSearchCV(xgb, param_grid, cv=3, scoring='f1', n_jobs=-1)
+grid_search.fit(X_train, y_train.values.ravel())
+
+best_model = grid_search.best_estimator_
+print(f"Best parameters: {grid_search.best_params_}")
+
+y_pred = best_model.predict(X_test)
+y_prob = best_model.predict_proba(X_test)[:, 1]
+
+print(f"Accuracy: {accuracy_score(y_test, y_pred):.4f}")
+print(f"F1 Score: {f1_score(y_test, y_pred):.4f}")
+print(f"ROC-AUC: {roc_auc_score(y_test, y_prob):.4f}")
+
+model_path = "best_tourism_model.joblib"
+joblib.dump(best_model, model_path)
+
+repo_id = "amitmzn/tourism-model"
+try:
+    api.repo_info(repo_id=repo_id, repo_type="model")
+except RepositoryNotFoundError:
+    create_repo(repo_id=repo_id, repo_type="model", private=False)
+
+api.upload_file(path_or_fileobj=model_path, path_in_repo="best_tourism_model.joblib", repo_id=repo_id, repo_type="model")
+print("Model uploaded to HF!")

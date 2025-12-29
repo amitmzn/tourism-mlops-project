@@ -7,7 +7,6 @@ repo_type = "dataset"
 
 api = HfApi(token=os.getenv("HF_TOKEN"))
 
-# Check if repo exists
 try:
     api.repo_info(repo_id=repo_id, repo_type=repo_type)
     print(f"Dataset '{repo_id}' already exists.")
@@ -15,8 +14,7 @@ except RepositoryNotFoundError:
     print(f"Dataset '{repo_id}' not found. Creating new dataset...")
     create_repo(repo_id=repo_id, repo_type=repo_type, private=False)
 
-# Upload ONLY if the local folder exists (e.g., in Colab)
-# In GitHub Actions, this block will be skipped, preventing the error.
+# Safe for CI/CD - only upload if local folder exists
 if os.path.exists("tourism_project/data") and os.path.isdir("tourism_project/data"):
     if os.listdir("tourism_project/data"):
         print("Uploading data from local folder...")
