@@ -19,7 +19,7 @@ jobs:
       - name: Upload Dataset
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
-        run: python model_building/upload_data.py
+        run: python model_building/data_register.py
 
   data-prep:
     needs: register-dataset
@@ -35,7 +35,7 @@ jobs:
       - name: Run Data Preparation
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
-        run: python model_building/data_prep.py
+        run: python model_building/prep.py
 
   model-training:
     needs: data-prep
@@ -51,7 +51,7 @@ jobs:
       - name: Model Training
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
-        run: python model_building/model_training.py
+        run: python model_building/train.py
 
   deploy-hosting:
     needs: model-training
@@ -67,4 +67,4 @@ jobs:
       - name: Deploy to HF Space
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
-        run: python model_building/deploy.py
+        run: python hosting/hosting.py
