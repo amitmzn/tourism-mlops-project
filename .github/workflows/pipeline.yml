@@ -52,13 +52,13 @@ jobs:
         with:
           python-version: '3.9'
       - name: Install Dependencies
-        run: pip install pandas numpy scikit-learn xgboost mlflow huggingface_hub datasets joblib
+        run: pip install pandas numpy scikit-learn xgboost huggingface_hub datasets joblib
       - name: Train and Upload Model
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
           if [ -d "tourism_project/model_building" ]; then cd tourism_project; fi
-          python model_building/model_training.py
+          python model_building/train.py
 
   deploy-hosting:
     needs: model-training
@@ -76,4 +76,4 @@ jobs:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
           if [ -d "tourism_project/model_building" ]; then cd tourism_project; fi
-          python model_building/deploy.py
+          python hosting/hosting.py
