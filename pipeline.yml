@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch:
 
 jobs:
   register-dataset:
@@ -16,10 +17,12 @@ jobs:
           python-version: '3.9'
       - name: Install Dependencies
         run: pip install huggingface_hub
-      - name: Upload Dataset
+      - name: Register Dataset on Hugging Face
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
-        run: python model_building/data_register.py
+        run: |
+          if [ -d "tourism_project/model_building" ]; then cd tourism_project; fi
+          python model_building/data_register.py
 
   data-prep:
     needs: register-dataset
@@ -35,7 +38,9 @@ jobs:
       - name: Run Data Preparation
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
-        run: python model_building/data_prep.py
+        run: |
+          if [ -d "tourism_project/model_building" ]; then cd tourism_project; fi
+          python model_building/data_prep.py
 
   model-training:
     needs: data-prep
@@ -47,11 +52,13 @@ jobs:
         with:
           python-version: '3.9'
       - name: Install Dependencies
-        run: pip install pandas numpy scikit-learn xgboost huggingface_hub datasets joblib
-      - name: Model Training
+        run: pip install pandas numpy scikit-learn xgboost mlflow huggingface_hub datasets joblib
+      - name: Train and Upload Model
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
-        run: python model_building/train.py
+        run: |
+          if [ -d "tourism_project/model_building" ]; then cd tourism_project; fi
+          python model_building/model_training.py
 
   deploy-hosting:
     needs: model-training
@@ -64,7 +71,9 @@ jobs:
           python-version: '3.9'
       - name: Install Dependencies
         run: pip install huggingface_hub
-      - name: Deploy to HF Space
+      - name: Deploy to Hugging Face Space
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
-        run: python hosting/hosting.py
+        run: |
+          if [ -d "tourism_project/model_building" ]; then cd tourism_project; fi
+          python model_building/deploy.py
